@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier Direction - Planning Annuel Scolaire</title>
+    <style>
+        /* --- STYLE GÉNÉRAL --- */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #2c3e50;
+            margin: 0;
+            padding: 15px;
+        }
+
+        /* En-tête / Barre d'outils */
+        .top-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .title-input {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 6px;
+            flex-grow: 1;
+            max-width: 70%;
+            text-transform: uppercase;
+        }
+
+        .title-input::placeholder { color: rgba(255,255,255,0.7); }
+        .title-input:focus { outline: none; background: rgba(255, 255, 255, 0.25); border-color: #fff; }
+
+        .nav-bar {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 6px;
+            padding-bottom: 2px;
+        }
+        
+        .nav-bar::-webkit-scrollbar { height: 4px; }
+        .nav-bar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+        .nav-bar::-webkit-scrollbar-track { background: transparent; }
+
+        .nav-bar > * { flex-shrink: 0; }
+
+        .nav-bar button, .nav-bar select {
+            background-color: #ffffff;
+            color: #2c3e50;
+            border: none;
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-bar select { padding-right: 20px; }
+        .nav-bar button:hover { background-color: #eef2f7; transform: translateY(-1px); }
+        .btn-main { background-color: #27ae60 !important; color: white !important; }
+        .btn-main:hover { background-color: #219150 !important; }
+        .btn-danger { background-color: #e74c3c !important; color: white !important; }
+        .btn-purple { background-color: #8e44ad !important; color: white !important; }
+        .btn-orange { background-color: #e67e22 !important; color: white !important; }
+        .btn-info { background-color: #2980b9 !important; color: white !important; }
+        .btn-selection-active { background-color: #f39c12 !important; color: white !important; border: 2px solid white !important; }
+
+        /* Barre de Légende */
+        .legend-bar {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e1e8ed;
+        }
+
+        .legend-title { font-weight: bold; font-size: 13px; color: #34495e; margin-right: 5px; }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        .legend-color-dot { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); }
+
+        /* Grille du Calendrier */
+        .calendar-wrapper {
+            display: grid;
+            background-color: #cbd5e1;
+            gap: 1px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .month-header {
+            background-color: #1e3c72;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: bold;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .day-cell {
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            min-height: 42px;
+            transition: background-color 0.15s;
+        }
+
+        .day-cell:hover { background-color: #f1f5f9; }
+        .weekend { background-color: #f8fafc; }
+        .holiday-cell { background-color: #fff9db; }
+        .empty-cell { background-color: #e2e8f0; cursor: default; }
+
+        .drag-over {
+            background-color: #e0f2fe !important;
+            outline: 2px dashed #0284c7;
+            outline-offset: -2px;
+        }
+
+        .day-info { display: flex; align-items: center; margin-bottom: 2px; pointer-events: none; }
+        .day-name { width: 22px; color: #64748b; text-transform: uppercase; font-size: 9px; font-weight: bold; }
+        .day-num { width: 18px; font-weight: bold; text-align: right; margin-right: 5px; color: #0f172a; font-size: 11px; }
+        .week-type-tag { font-size: 8px; font-weight: bold; padding: 1px 3px; border-radius: 3px; background: #e2e8f0; color: #475569; margin-left: 2px; }
+        .holiday-tag { font-size: 8px; font-weight: bold; color: #d97706; margin-left: auto; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .event-badge {
+            font-size: 10px;
+            padding: 3px 6px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.25;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+            cursor: grab;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 4px;
+        }
+        .event-time { font-size: 8.5px; opacity: 0.9; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px);
+            justify-content: center; align-items: center; z-index: 2000;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 12px; width: 460px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
+        }
+        .form-group { margin-top: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 12px; color: #334155; }
+        .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 13px; }
+        .modal-btns { margin-top: 25px; display: flex; justify-content: space-between; gap: 8px; }
+
+        .quick-color-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .quick-color-btn {
+            border: 1px solid rgba(0,0,0,0.15); border-radius: 4px; padding: 4px 8px;
+            font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;
+        }
+
+        /* --- MODE IMPRESSION A3 PAYSAGE (1 PAGE SEULE) --- */
+        .print-only { display: none; }
+
+        @media print {
+            @page {
+                size: A3 landscape;
+                margin: 5mm;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 9pt;
+            }
+            .no-print, .nav-bar, .top-header, .modal { display: none !important; }
+            .print-only { display: block !important; }
+
+            .print-header {
+                text-align: center;
+                margin-bottom: 6px;
+            }
+            .print-title {
+                font-size: 20pt;
+                font-weight: 900;
+                text-transform: uppercase;
+                color: #0f172a;
+                margin: 0 0 2px 0;
+            }
+            .print-subtitle {
+                font-size: 11pt;
+                font-weight: bold;
+                color: #475569;
+            }
+
+            .calendar-wrapper {
+                gap: 1px !important;
+                background-color: #000 !important;
+                border: 1.5px solid #000 !important;
+                box-shadow: none !important;
+            }
+            
+            .month-header {
+                background-color: #1e3c72 !important;
+                color: #fff !important;
+                font-size: 11pt !important;
+                font-weight: 900 !important;
+                padding: 4px 0 !important;
+            }
+            
+            .day-cell {
+                min-height: 22px !important;
+                padding: 1px 2px !important;
+                background-color: #fff !important;
+                font-size: 8pt !important;
+            }
+            
+            .weekend { background-color: #f1f5f9 !important; }
+            .holiday-cell { background-color: #fef3c7 !important; }
+            .day-name { font-size: 7pt !important; color: #334155 !important; font-weight: bold !important; width: 16px !important; }
+            .day-num { font-size: 9pt !important; color: #000 !important; font-weight: 900 !important; }
+            .holiday-tag { font-size: 6.5pt !important; color: #b45309 !important; }
+
+            .event-badge { 
+                font-size: 7.5pt !important;
+                font-weight: 800 !important;
+                border: none !important; 
+                padding: 2px 3px !important; 
+                margin: 1px 0 !important;
+                line-height: 1.1 !important;
+                border-radius: 2px !important;
+                text-align: left !important;
+            }
+
+            .print-legend {
+                display: flex !important;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+                margin-top: 8px;
+                padding: 6px 12px;
+                border: 1px solid #cbd5e1;
+                background: #f8fafc;
+                border-radius: 6px;
+            }
+            .legend-item-print {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                font-size: 9pt;
+                font-weight: bold;
+            }
+            .legend-dot-print {
+                width: 12px;
+                height: 12px;
+                border-radius: 2px;
+                border: 1px solid rgba(0,0,0,0.3);
+            }
+            
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-header no-print">
+        <div class="title-container">
+            <input type="text" id="planning-title-input" class="title-input" value="CALENDRIER DE DIRECTION - ANNÉE SCOLAIRE 2025-2026" onchange="updateTitle()" placeholder="Titre du planning annuel...">
+            
+            <div id="live-clock" style="background: white; color: #2c3e50; padding: 8px 12px; border-radius: 6px; font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; white-space: nowrap; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);"></div>
+
+            <div>
+                <span style="font-size:12px; opacity:0.8; margin-right:5px;">Zone Éduc. Nationale :</span>
+                <select id="zone-select" onchange="changeZone()">
+                    <option value="A">Zone A</option>
+                    <option value="B">Zone B</option>
+                    <option value="C" selected>Zone C</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <button onclick="changeYear(-1)">&#9664; Prec.</button>
+            <span id="year-display" style="font-weight: bold; font-size:13px; color:white; min-width: 120px; text-align: center;"></span>
+            <button onclick="changeYear(1)">Suiv. &#9654;</button>
+            
+            <span style="border-left: 1px solid rgba(255,255,255,0.3); height: 22px; margin: 0 2px;"></span>
+
+            <button class="btn-main" onclick="autoFillNationalCalendar()">🇫🇷 Générer Fériés & Vacances</button>
+            <button class="btn-info" onclick="openLegendManagerModal()">🏷️ Légende</button>
+            <button class="btn-purple" onclick="openWeekABConfigModal()">🗓️ Semaines A/B</button>
+
+            <span style="border-left: 1px solid rgba(255,255,255,0.3); height: 22px; margin: 0 2px;"></span>
+
+            <button id="btn-toggle-selection" onclick="toggleSelectionMode()">Sélection : OFF</button>
+            <button id="btn-bulk-edit" class="btn-main" style="display:none" onclick="openBulkModal()">Modifier</button>
+            
+            <button id="btn-month-filter" class="btn-orange" onclick="openMonthFilterModal()">📅 Mois</button>
+            <button id="btn-filter" style="background-color: #8e44ad; color:white;" onclick="openFilterModal()">🎨 Couleurs</button>
+
+            <span style="border-left: 1px solid rgba(255,255,255,0.3); height: 22px; margin: 0 2px;"></span>
+            
+            <button class="btn-main" onclick="window.print()">🖨️ A3</button>
+            <button onclick="saveProject()">💾 Sauvegarder</button>
+            <button onclick="document.getElementById('importFile').click()">📂 Charger</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="loadProject(event)">
+            <button class="btn-main" onclick="exportToExcel()">📊 Excel</button>
+            
+            <span style="border-left: 1px solid rgba(255,255,255,0.3); height: 22px; margin: 0 2px;"></span>
+            
+            <button onclick="document.getElementById('importIcsFile').click()">📥 ICS</button>
+            <input type="file" id="importIcsFile" style="display:none" accept=".ics" onchange="loadIcsProject(event)">
+            <button class="btn-purple" onclick="exportToICS()">📤 ICS</button>
+        </div>
+
+        <div id="today-actions-container" style="background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 6px; margin-top: 10px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; flex: 1;">
+                <span style="color: #f1c40f; font-weight: bold; flex-shrink: 0;">📌 Actions du jour :</span>
+                <span id="today-actions-list" style="font-weight: normal; color: white; text-overflow: ellipsis; overflow: hidden;">Aucune</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <input type="text" id="search-input" placeholder="🔍 Rechercher..." oninput="handleSearch(this.value)" style="padding: 4px 10px; border-radius: 4px; border: none; font-size: 11px; width: 180px; background: #fff; color: #2c3e50; font-weight: 600;">
+            </div>
+        </div>
+    </div>
+
+    <div class="print-only print-header">
+        <h1 class="print-title" id="print-title-display">CALENDRIER DE DIRECTION</h1>
+        <div class="print-subtitle" id="print-subtitle-display">Année Scolaire 2025-2026 | Zone C</div>
+    </div>
+
+    <div class="legend-bar no-print" id="screen-legend-bar">
+        <span class="legend-title">Légende :</span>
+        <div id="legend-items-container" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;"></div>
+    </div>
+
+    <div class="calendar-wrapper" id="calendar-wrapper"></div>
+
+    <div class="print-only print-legend" id="print-legend-container"></div>
+
+    <div id="legend-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Gestion de la Légende des Couleurs</h3>
+            <p style="font-size:12px; color:#64748b;">Personnalisez les intitulés et les couleurs associées à vos actions.</p>
+            <div id="legend-manager-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;"></div>
+            <button style="border:none; background:#e2e8f0; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="addLegendRow()">+ Ajouter une catégorie</button>
+            <div class="modal-btns">
+                <button style="background:#94a3b8; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="closeModal('legend-modal')">Annuler</button>
+                <button class="btn-main" style="border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="saveLegend()">Enregistrer la légende</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="month-filter-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Filtrer par Mois</h3>
+            <p style="font-size: 12px; color: #64748b;">Sélectionnez les mois à afficher pour vous concentrer sur une période.</p>
+            <div id="month-list" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;"></div>
+            <div class="modal-btns">
+                <button style="border:none; padding:10px; border-radius:6px; cursor:pointer;" onclick="selectAllMonths()">Tout cocher</button>
+                <button class="btn-main" style="color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="applyMonthFilters()">Appliquer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="filter-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Filtrer par couleur</h3>
+            <p style="font-size: 12px; color: #64748b;">Décochez les couleurs que vous souhaitez masquer.</p>
+            <div id="filter-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;"></div>
+            <div class="modal-btns">
+                <button style="border:none; padding:10px; border-radius:6px; cursor:pointer;" onclick="selectAllFilters()">Tout cocher</button>
+                <button class="btn-main" style="color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="applyFilters()">Appliquer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="event-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Saisir une action</h3>
+            <div class="form-group"><label>Intitulé de l'action :</label><input type="text" id="event-title"></div>
+            <div class="form-group"><label>Horaire (optionnel, ex: 09:00) :</label><input type="time" id="event-time"></div>
+            
+            <div class="form-group">
+                <label>Raccourci Légende :</label>
+                <div id="quick-legend-pickers" class="quick-color-btns"></div>
+            </div>
+
+            <div class="form-group"><label>Couleur personnalisée :</label><input type="color" id="event-color" value="#3498db"></div>
+            <div class="form-group"><label>Date de début :</label><input type="date" id="event-start"></div>
+            <div id="end-date-group" class="form-group"><label>Date de fin (optionnelle pour période) :</label><input type="date" id="event-end"></div>
+            
+            <div class="modal-btns">
+                <div>
+                    <button class="btn-danger" id="btn-delete" onclick="deleteEvent()">Supprimer</button>
+                    <button class="btn-purple" id="btn-duplicate" onclick="duplicateEventModal()" style="display:none; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;">Dupliquer</button>
+                </div>
+                <div>
+                    <button style="background:#94a3b8; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="closeModal('event-modal')">Annuler</button>
+                    <button class="btn-main" style="color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="saveEvent()">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="week-ab-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Configuration des Semaines A / B</h3>
+            <p style="font-size: 12px; color: #64748b;">Définissez une semaine de référence pour calculer automatiquement l'alternance A et B sur toute l'année scolaire.</p>
+            <div class="form-group">
+                <label>Date de référence (un lundi de préférence) :</label>
+                <input type="date" id="week-ab-ref-date" value="2025-09-01">
+            </div>
+            <div class="form-group">
+                <label>Type pour cette semaine de référence :</label>
+                <select id="week-ab-ref-type">
+                    <option value="A">Semaine A</option>
+                    <option value="B">Semaine B</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label><input type="checkbox" id="week-ab-enabled"> Activer l'affichage discret des semaines A/B dans le calendrier</label>
+            </div>
+            <div class="modal-btns">
+                <button style="background:#94a3b8; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="closeModal('week-ab-modal')">Annuler</button>
+                <button class="btn-main" style="color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="saveWeekABConfig()">Appliquer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bulk-modal" class="modal">
+        <div class="modal-content">
+            <h3>Modifier la sélection multiple</h3>
+            <p id="bulk-count" style="font-size: 12px; color: #64748b;"></p>
+            <div class="form-group"><label><input type="checkbox" id="chk-bulk-title"> Modifier l'intitulé :</label><input type="text" id="bulk-title" placeholder="Nouvel intitulé commun"></div>
+            <div class="form-group"><label><input type="checkbox" id="chk-bulk-color"> Modifier la couleur :</label><input type="color" id="bulk-color" value="#f1c40f"></div>
+            <div class="modal-btns">
+                <button class="btn-danger" style="border:none; padding:10px; border-radius:6px; color:white; cursor:pointer;" onclick="bulkDelete()">Tout Supprimer</button>
+                <div>
+                    <button style="background:#94a3b8; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="closeModal('bulk-modal')">Annuler</button>
+                    <button class="btn-main" style="color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer;" onclick="applyBulkEdit()">Appliquer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ÉTAT GLOBAL ---
+        let currentStartYear = 2025; // Année scolaire 2025-2026 (d'Août à Juillet)
+        let currentZone = "C";
+        let planningTitle = "CALENDRIER DE DIRECTION - ANNÉE SCOLAIRE 2025-2026";
+        let eventsData = {}; 
+        let currentEditInfo = null;
+        let isSelectionMode = false;
+        let selectedItems = []; 
+        let hiddenColors = []; 
+        let hiddenMonths = []; 
+
+        // Configuration Semaines A/B
+        let weekABConfig = {
+            enabled: false,
+            refDate: "2025-09-01", // Lundi de rentrée type
+            refType: "A" // "A" ou "B"
+        };
+
+        // Légendes par défaut
+        let legendItems = [
+            { label: "Orientation / Conseils", color: "#e74c3c" },
+            { label: "Réunions Direction / Vie Établissement", color: "#3498db" },
+            { label: "Examens & Évaluations", color: "#2ecc71" },
+            { label: "Formations & Stages", color: "#8e44ad" },
+            { label: "Événements & Projets", color: "#e67e22" },
+            { label: "Vacances Scolaires", color: "#f1c40f" },
+            { label: "Jours Fériés", color: "#95a5a6" }
+        ];
+
+        const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+        const dayNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+        let searchQuery = "";
+
+        function handleSearch(query) {
+            searchQuery = query.trim().toLowerCase();
+            renderCalendar();
+        }
+
+        // --- CALCULS DES JOURS FÉRIÉS FRANÇAIS ---
+        function getEasterDate(year) {
+            const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+            const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4), k = year % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(year, month - 1, day);
+        }
+
+        function getFrenchPublicHolidays(year) {
+            const holidays = {};
+            const addH = (d, m, label) => {
+                const k = `${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                holidays[k] = label;
+            };
+
+            // Jours fixes
+            addH(1, 1, "Jour de l'An");
+            addH(1, 5, "Fête du Travail");
+            addH(8, 5, "Victoire 1945");
+            addH(14, 7, "Fête Nationale");
+            addH(15, 8, "Assomption");
+            addH(1, 11, "Toussaint");
+            addH(11, 11, "Armistice 1918");
+            addH(25, 12, "Noël");
+
+            // Jours mobiles (Pâques)
+            const easter = getEasterDate(year);
+            const addRelDate = (offsetDays, label) => {
+                const dt = new Date(easter);
+                dt.setDate(dt.getDate() + offsetDays);
+                const k = formatDate(dt);
+                holidays[k] = label;
+            };
+
+            addRelDate(1, "Lundi de Pâques");
+            addRelDate(39, "Ascension");
+            addRelDate(50, "Lundi de Pentecôte");
+
+            return holidays;
+        }
+
+        // --- CALENDRIER SCOLAIRE OFFICIEL ET ESTIMÉ ---
+        function getSchoolHolidays(startYear, zone) {
+            // Liste officielle pour les années pré-remplies, sinon estimation
+            const hList = [];
+
+            if (startYear === 2024) {
+                hList.push({ name: "Vacances de la Toussaint", start: "2024-10-19", end: "2024-11-03" });
+                hList.push({ name: "Vacances de Noël", start: "2024-12-21", end: "2025-01-05" });
+                
+                if (zone === "A") {
+                    hList.push({ name: "Vacances d'Hiver", start: "2025-02-22", end: "2025-03-09" });
+                    hList.push({ name: "Vacances de Printemps", start: "2025-04-19", end: "2025-05-04" });
+                } else if (zone === "B") {
+                    hList.push({ name: "Vacances d'Hiver", start: "2025-02-08", end: "2025-02-23" });
+                    hList.push({ name: "Vacances de Printemps", start: "2025-04-05", end: "2025-04-21" });
+                } else { // C
+                    hList.push({ name: "Vacances d'Hiver", start: "2025-02-15", end: "2025-03-02" });
+                    hList.push({ name: "Vacances de Printemps", start: "2025-04-12", end: "2025-04-27" });
+                }
+                hList.push({ name: "Vacances d'Été", start: "2025-07-05", end: "2025-08-31" });
+            } 
+            else if (startYear === 2025) {
+                hList.push({ name: "Vacances de la Toussaint", start: "2025-10-18", end: "2025-11-02" });
+                hList.push({ name: "Vacances de Noël", start: "2025-12-20", end: "2026-01-04" });
+                
+                if (zone === "A") {
+                    hList.push({ name: "Vacances d'Hiver", start: "2026-02-14", end: "2026-03-01" });
+                    hList.push({ name: "Vacances de Printemps", start: "2026-04-11", end: "2026-04-26" });
+                } else if (zone === "B") {
+                    hList.push({ name: "Vacances d'Hiver", start: "2026-02-21", end: "2026-03-08" });
+                    hList.push({ name: "Vacances de Printemps", start: "2026-04-18", end: "2026-05-03" });
+                } else { // C
+                    hList.push({ name: "Vacances d'Hiver", start: "2026-02-07", end: "2026-02-22" });
+                    hList.push({ name: "Vacances de Printemps", start: "2026-04-04", end: "2026-04-19" });
+                }
+                hList.push({ name: "Vacances d'Été", start: "2026-07-04", end: "2026-08-31" });
+            }
+            else if (startYear === 2026) {
+                hList.push({ name: "Vacances de la Toussaint", start: "2026-10-17", end: "2026-11-01" });
+                hList.push({ name: "Vacances de Noël", start: "2026-12-19", end: "2027-01-03" });
+                
+                if (zone === "A") {
+                    hList.push({ name: "Vacances d'Hiver", start: "2027-02-06", end: "2027-02-21" });
+                    hList.push({ name: "Vacances de Printemps", start: "2027-04-03", end: "2027-04-18" });
+                } else if (zone === "B") {
+                    hList.push({ name: "Vacances d'Hiver", start: "2027-02-13", end: "2027-02-28" });
+                    hList.push({ name: "Vacances de Printemps", start: "2027-04-10", end: "2027-04-25" });
+                } else { // C
+                    hList.push({ name: "Vacances d'Hiver", start: "2027-02-20", end: "2027-03-07" });
+                    hList.push({ name: "Vacances de Printemps", start: "2027-04-17", end: "2027-05-02" });
+                }
+                hList.push({ name: "Vacances d'Été", start: "2027-07-03", end: "2027-08-31" });
+            }
+            else {
+                // Algorithme standard d'estimation
+                hList.push({ name: "Vacances de la Toussaint", start: `${startYear}-10-18`, end: `${startYear}-11-02` });
+                hList.push({ name: "Vacances de Noël", start: `${startYear}-12-20`, end: `${startYear+1}-01-04` });
+                hList.push({ name: "Vacances d'Hiver", start: `${startYear+1}-02-14`, end: `${startYear+1}-03-01` });
+                hList.push({ name: "Vacances de Printemps", start: `${startYear+1}-04-11`, end: `${startYear+1}-04-26` });
+                hList.push({ name: "Vacances d'Été", start: `${startYear+1}-07-04`, end: `${startYear+1}-08-31` });
+            }
+
+            return hList;
+        }
+
+        // --- CALCUL SEMAINE A / B ---
+        function getWeekABType(dateObj) {
+            if (!weekABConfig.enabled) return null;
+            // On se cale sur le lundi de la semaine de la date courante
+            let d = new Date(dateObj);
+            let day = d.getDay();
+            let diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajustement au lundi
+            let monday = new Date(d.setDate(diff));
+            monday.setHours(0,0,0,0);
+
+            let refD = new Date(weekABConfig.refDate + "T00:00:00");
+            let refDay = refD.getDay();
+            let refDiff = refD.getDate() - refDay + (refDay === 0 ? -6 : 1);
+            let refMonday = new Date(refD.setDate(refDiff));
+            refMonday.setHours(0,0,0,0);
+
+            let diffTime = monday.getTime() - refMonday.getTime();
+            let diffWeeks = Math.round(diffTime / (1000 * 60 * 60 * 24 * 7));
+
+            let isA = (weekABConfig.refType === "A");
+            // Si diffWeeks est pair, c'est le même type que refType. Si impair, c'est l'autre.
+            if (Math.abs(diffWeeks) % 2 === 1) {
+                isA = !isA;
+            }
+            return isA ? "A" : "B";
+        }
+
+        // --- GÉNÉRATION AUTOMATIQUE DU CALENDRIER ÉDUCATION NATIONALE ---
+        function autoFillNationalCalendar() {
+            if (confirm(`Générer automatiquement les jours fériés et vacances scolaires pour la Zone ${currentZone} (${currentStartYear}-${currentStartYear+1}) ?`)) {
+                
+                // 1. Remplissage des Fériés
+                const h1 = getFrenchPublicHolidays(currentStartYear);
+                const h2 = getFrenchPublicHolidays(currentStartYear + 1);
+                const allPublicHolidays = { ...h1, ...h2 };
+
+                // 2. Remplissage des Vacances
+                const schoolHolidays = getSchoolHolidays(currentStartYear, currentZone);
+
+                // Couleur pour les vacances (jaune légende) et fériés (gris légende)
+                let vacColor = "#f1c40f";
+                let ferieColor = "#95a5a6";
+
+                const legVac = legendItems.find(l => l.label.toLowerCase().includes("vacance"));
+                if (legVac) vacColor = legVac.color;
+
+                const legFer = legendItems.find(l => l.label.toLowerCase().includes("férié") || l.label.toLowerCase().includes("ferie"));
+                if (legFer) ferieColor = legFer.color;
+
+                // Application des vacances
+                schoolHolidays.forEach(vac => {
+                    let cur = new Date(vac.start + "T00:00:00");
+                    let stop = new Date(vac.end + "T00:00:00");
+                    while (cur <= stop) {
+                        let k = formatDate(cur);
+                        if (!eventsData[k]) eventsData[k] = [];
+                        let exists = eventsData[k].some(e => e.title === vac.name);
+                        if (!exists) {
+                            eventsData[k].push({ title: vac.name, color: vacColor });
+                        }
+                        cur.setDate(cur.getDate() + 1);
+                    }
+                });
+
+                // Application des fériés
+                Object.keys(allPublicHolidays).forEach(k => {
+                    if (!eventsData[k]) eventsData[k] = [];
+                    let label = "Férié: " + allPublicHolidays[k];
+                    let exists = eventsData[k].some(e => e.title.includes("Férié"));
+                    if (!exists) {
+                        eventsData[k].unshift({ title: label, color: ferieColor });
+                    }
+                });
+
+                renderCalendar();
+            }
+        }
+
+        // --- RENDU DU CALENDRIER ---
+        function renderCalendar() {
+            const wrapper = document.getElementById("calendar-wrapper");
+            wrapper.innerHTML = "";
+            
+            document.getElementById("year-display").innerText = `Août ${currentStartYear} - Juil ${currentStartYear+1}`;
+            document.getElementById("print-subtitle-display").innerText = `Année Scolaire ${currentStartYear}-${currentStartYear+1} | Zone ${currentZone}`;
+
+            let visibleCount = 12 - hiddenMonths.length;
+            if (visibleCount === 0) visibleCount = 1; 
+            wrapper.style.gridTemplateColumns = `repeat(${visibleCount}, 1fr)`;
+
+            let visibleColIndex = 1; 
+
+            // Calcul des jours fériés pour la recherche rapide d'affichage
+            const pubHolidays = {
+                ...getFrenchPublicHolidays(currentStartYear),
+                ...getFrenchPublicHolidays(currentStartYear + 1)
+            };
+
+            for (let i = 0; i < 12; i++) {
+                let m = (7 + i) % 12;
+                let y = m >= 7 ? currentStartYear : currentStartYear + 1;
+                if (hiddenMonths.includes(m)) continue;
+
+                let daysInMonth = new Date(y, m + 1, 0).getDate();
+
+                // En-tête de mois
+                let header = document.createElement("div");
+                header.className = "month-header";
+                header.style.gridColumn = visibleColIndex; 
+                header.style.gridRow = 1;
+                header.innerText = monthNames[m];
+                wrapper.appendChild(header);
+
+                // Case pour chaque jour du mois
+                for (let d = 1; d <= 31; d++) {
+                    let cell = document.createElement("div");
+                    cell.style.gridColumn = visibleColIndex; 
+                    cell.style.gridRow = d + 1;
+
+                    if (d <= daysInMonth) {
+                        let dateObj = new Date(y, m, d);
+                        let dateKey = formatDate(dateObj);
+                        let dw = dateObj.getDay();
+                        let isWeekend = (dw === 0 || dw === 6);
+                        let holidayLabel = pubHolidays[dateKey];
+                        let weekAB = getWeekABType(dateObj);
+
+                        cell.className = "day-cell" + (isWeekend ? " weekend" : "") + (holidayLabel ? " holiday-cell" : "");
+                        cell.setAttribute("data-date", dateKey);
+
+                        // Événements Drag & Drop
+                        cell.addEventListener("dragover", (e) => { e.preventDefault(); cell.classList.add("drag-over"); });
+                        cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
+                        cell.addEventListener("drop", handleDrop);
+
+                        cell.onclick = (e) => { if(e.target === cell) openModal(dateKey); };
+
+                        let dayInfoHtml = `<div class="day-info">
+                            <span class="day-name">${dayNames[dw]}</span>
+                            <span class="day-num">${d}</span>`;
+                        if (weekAB && !isWeekend) {
+                            dayInfoHtml += `<span class="week-type-tag" title="Semaine ${weekAB}">S.${weekAB}</span>`;
+                        }
+                        if (holidayLabel) {
+                            dayInfoHtml += `<span class="holiday-tag" title="${holidayLabel}">${holidayLabel}</span>`;
+                        }
+                        dayInfoHtml += `</div>`;
+                        cell.innerHTML = dayInfoHtml;
+
+                        // Rendu des badges d'actions
+                        if (eventsData[dateKey]) {
+                            // Tri chronologique des événements de la journée en fonction de l'horaire s'il existe
+                            let sortedDayEvents = [...eventsData[dateKey]].sort((a, b) => {
+                                if (!a.time) return 1;
+                                if (!b.time) return -1;
+                                return a.time.localeCompare(b.time);
+                            });
+
+                            sortedDayEvents.forEach((evt) => {
+                                // Retrouver l'index d'origine pour le drag & drop / clic
+                                let realIdx = eventsData[dateKey].indexOf(evt);
+                                if (hiddenColors.includes(evt.color)) return; 
+
+                                // Filtre de recherche
+                                let isMatch = !searchQuery || evt.title.toLowerCase().includes(searchQuery);
+                                
+                                const b = document.createElement("div");
+                                b.className = "event-badge";
+                                b.style.backgroundColor = evt.color;
+                                b.style.color = getContrast(evt.color);
+                                
+                                if (searchQuery && isMatch) {
+                                    b.style.outline = "2px solid #fff";
+                                    b.style.boxShadow = "0 0 8px rgba(255,255,255,0.8)";
+                                } else if (searchQuery && !isMatch) {
+                                    b.style.opacity = "0.25";
+                                }
+
+                                let badgeContent = "";
+                                if (evt.time) {
+                                    badgeContent += `<span class="event-time">⏰ ${evt.time}</span>`;
+                                }
+                                badgeContent += `<span>${evt.title}</span>`;
+                                b.innerHTML = badgeContent;
+                                
+                                b.draggable = !isSelectionMode; 
+                                b.addEventListener("dragstart", (e) => {
+                                    e.dataTransfer.setData("application/json", JSON.stringify({ sourceDate: dateKey, sourceIndex: realIdx }));
+                                    setTimeout(() => b.style.opacity = "0.4", 0);
+                                });
+                                b.addEventListener("dragend", () => { b.style.opacity = "1"; });
+                                
+                                if (isSelected(dateKey, realIdx)) b.classList.add("selected");
+
+                                b.onclick = (e) => {
+                                    e.stopPropagation();
+                                    if (isSelectionMode) toggleItemSelection(dateKey, realIdx);
+                                    else openModal(dateKey, realIdx);
+                                };
+                                cell.appendChild(b);
+                            });
+                        }
+                    } else {
+                        cell.className = "day-cell empty-cell";
+                    }
+                    wrapper.appendChild(cell);
+                }
+                visibleColIndex++; 
+            }
+
+            renderLegendBar();
+            updateActionsDuJour();
+            if (typeof autoSaveProject === "function") autoSaveProject();
+        }
+
+        // --- RENDU DES LÉGENDES (ÉCRAN ET IMPRESSION) ---
+        function renderLegendBar() {
+            const screenBar = document.getElementById("legend-items-container");
+            const printBar = document.getElementById("print-legend-container");
+            screenBar.innerHTML = "";
+            printBar.innerHTML = "";
+
+            legendItems.forEach(item => {
+                // Légende Écran
+                let el = document.createElement("div");
+                el.className = "legend-item";
+                el.innerHTML = `<div class="legend-color-dot" style="background-color:${item.color};"></div><span>${item.label}</span>`;
+                screenBar.appendChild(el);
+
+                // Légende Impression
+                let elP = document.createElement("div");
+                elP.className = "legend-item-print";
+                elP.innerHTML = `<div class="legend-dot-print" style="background-color:${item.color};"></div><span>${item.label}</span>`;
+                printBar.appendChild(elP);
+            });
+
+            // Boutons de sélection rapide de couleur dans la modale d'événement
+            const quickBar = document.getElementById("quick-legend-pickers");
+            if (quickBar) {
+                quickBar.innerHTML = "";
+                legendItems.forEach(item => {
+                    let btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "quick-color-btn";
+                    btn.style.backgroundColor = item.color;
+                    btn.style.color = getContrast(item.color);
+                    btn.innerText = item.label;
+                    btn.onclick = () => {
+                        document.getElementById("event-color").value = item.color;
+                        let titleInput = document.getElementById("event-title");
+                        if (!titleInput.value) titleInput.value = item.label;
+                    };
+                    quickBar.appendChild(btn);
+                });
+            }
+        }
+
+        // --- GESTION DU TITRE & ZONE ---
+        function updateTitle() {
+            planningTitle = document.getElementById("planning-title-input").value;
+            document.getElementById("print-title-display").innerText = planningTitle || "CALENDRIER DE DIRECTION";
+            if (typeof autoSaveProject === "function") autoSaveProject();
+        }
+
+        function changeZone() {
+            currentZone = document.getElementById("zone-select").value;
+            renderCalendar();
+        }
+
+        // --- GESTION DES MODALES DE FILTRES ET LÉGENDE ---
+        function openLegendManagerModal() {
+            const list = document.getElementById("legend-manager-list");
+            list.innerHTML = "";
+            legendItems.forEach((item, index) => {
+                list.innerHTML += `
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="color" value="${item.color}" class="leg-color-input" style="width:35px; height:35px; border:none; cursor:pointer;">
+                        <input type="text" value="${item.label}" class="leg-label-input" style="flex:1; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+                        <button class="btn-danger" style="padding:6px 10px; border:none; border-radius:4px; cursor:pointer;" onclick="this.parentElement.remove()">X</button>
+                    </div>`;
+            });
+            document.getElementById("legend-modal").style.display = "flex";
+        }
+
+        function openWeekABConfigModal() {
+            document.getElementById("week-ab-ref-date").value = weekABConfig.refDate;
+            document.getElementById("week-ab-ref-type").value = weekABConfig.refType;
+            document.getElementById("week-ab-enabled").checked = weekABConfig.enabled;
+            document.getElementById("week-ab-modal").style.display = "flex";
+        }
+
+        function saveWeekABConfig() {
+            weekABConfig.refDate = document.getElementById("week-ab-ref-date").value;
+            weekABConfig.refType = document.getElementById("week-ab-ref-type").value;
+            weekABConfig.enabled = document.getElementById("week-ab-enabled").checked;
+            closeModal("week-ab-modal");
+            renderCalendar();
+        }
+
+        function addLegendRow() {
+            const list = document.getElementById("legend-manager-list");
+            list.innerHTML += `
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="color" value="#3498db" class="leg-color-input" style="width:35px; height:35px; border:none; cursor:pointer;">
+                    <input type="text" value="Nouvelle catégorie" class="leg-label-input" style="flex:1; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <button class="btn-danger" style="padding:6px 10px; border:none; border-radius:4px; cursor:pointer;" onclick="this.parentElement.remove()">X</button>
+                </div>`;
+        }
+
+        function saveLegend() {
+            const colors = document.querySelectorAll(".leg-color-input");
+            const labels = document.querySelectorAll(".leg-label-input");
+            legendItems = [];
+            colors.forEach((c, i) => {
+                if (labels[i].value.trim() !== "") {
+                    legendItems.push({ label: labels[i].value.trim(), color: c.value });
+                }
+            });
+            closeModal("legend-modal");
+            renderCalendar();
+        }
+
+        function openMonthFilterModal() {
+            const list = document.getElementById("month-list");
+            list.innerHTML = "";
+            for (let i = 0; i < 12; i++) {
+                let m = (7 + i) % 12, isChecked = !hiddenMonths.includes(m) ? "checked" : "";
+                list.innerHTML += `<label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:6px; background:#f8fafc; border-radius:4px; border:1px solid #e2e8f0;"><input type="checkbox" value="${m}" class="month-filter-chk" ${isChecked} style="width:18px; height:18px;"><span style="font-weight:bold; color:#1e293b;">${monthNames[m]}</span></label>`;
+            }
+            document.getElementById("month-filter-modal").style.display = "flex";
+        }
+        function selectAllMonths() { document.querySelectorAll(".month-filter-chk").forEach(chk => chk.checked = true); }
+        function applyMonthFilters() {
+            hiddenMonths = []; 
+            document.querySelectorAll(".month-filter-chk").forEach(chk => { if (!chk.checked) hiddenMonths.push(parseInt(chk.value)); });
+            const btnMonth = document.getElementById("btn-month-filter");
+            if (hiddenMonths.length > 0) { btnMonth.classList.add("btn-selection-active"); btnMonth.innerText = "📅 Mois (Actif)"; } 
+            else { btnMonth.classList.remove("btn-selection-active"); btnMonth.innerText = "📅 Mois"; }
+            closeModal("month-filter-modal"); renderCalendar();
+        }
+
+        function openFilterModal() {
+            const list = document.getElementById("filter-list"); list.innerHTML = "";
+            let uniqueColors = new Set(), colorSampleTitle = {};
+            Object.values(eventsData).forEach(dayEvents => { 
+                dayEvents.forEach(e => { uniqueColors.add(e.color); if (!colorSampleTitle[e.color]) colorSampleTitle[e.color] = e.title; }); 
+            });
+            if (uniqueColors.size === 0) list.innerHTML = "<p style='font-size:12px;'>Aucune action enregistrée pour le moment.</p>";
+            else {
+                uniqueColors.forEach(color => {
+                    let isChecked = !hiddenColors.includes(color) ? "checked" : "";
+                    let legMatch = legendItems.find(l => l.color.toLowerCase() === color.toLowerCase());
+                    let labelTxt = legMatch ? legMatch.label : `Ex: ${colorSampleTitle[color]}`;
+                    list.innerHTML += `<label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:bold; font-size:12px;"><input type="checkbox" value="${color}" class="color-filter-chk" ${isChecked} style="width:18px; height:18px;"><div style="width:22px; height:22px; background-color:${color}; border:1px solid #ccc; border-radius:4px;"></div><span>${labelTxt}</span></label>`;
+                });
+            }
+            document.getElementById("filter-modal").style.display = "flex";
+        }
+        function selectAllFilters() { document.querySelectorAll(".color-filter-chk").forEach(chk => chk.checked = true); }
+        function applyFilters() {
+            hiddenColors = []; 
+            document.querySelectorAll(".color-filter-chk").forEach(chk => { if (!chk.checked) hiddenColors.push(chk.value); });
+            const btnFilter = document.getElementById("btn-filter");
+            if (hiddenColors.length > 0) { btnFilter.classList.add("btn-selection-active"); btnFilter.innerText = "🎨 Couleurs (Actif)"; } 
+            else { btnFilter.classList.remove("btn-selection-active"); btnFilter.innerText = "🎨 Couleurs"; }
+            closeModal("filter-modal"); renderCalendar();
+        }
+
+        // --- DRAG AND DROP & SÉLECTION MULTIPLE ---
+        function handleDrop(e) {
+            e.preventDefault(); this.classList.remove("drag-over");
+            const targetDate = this.getAttribute("data-date"), dataStr = e.dataTransfer.getData("application/json");
+            if (!targetDate || !dataStr) return;
+            const { sourceDate, sourceIndex } = JSON.parse(dataStr), isCopy = e.ctrlKey || e.altKey;
+            if (sourceDate === targetDate && !isCopy) return;
+            const evtToMove = eventsData[sourceDate][sourceIndex];
+            if (!eventsData[targetDate]) eventsData[targetDate] = [];
+            eventsData[targetDate].push({ ...evtToMove });
+            if (!isCopy) { eventsData[sourceDate].splice(sourceIndex, 1); if (eventsData[sourceDate].length === 0) delete eventsData[sourceDate]; }
+            renderCalendar();
+        }
+
+        function toggleSelectionMode() {
+            isSelectionMode = !isSelectionMode; 
+            const btn = document.getElementById("btn-toggle-selection");
+            btn.innerText = isSelectionMode ? "Mode Sélection : ON" : "Sélection Multi : OFF"; 
+            btn.className = isSelectionMode ? "btn-selection-active" : "";
+            if (!isSelectionMode) { selectedItems = []; document.getElementById("btn-bulk-edit").style.display = "none"; }
+            renderCalendar();
+        }
+        function isSelected(date, idx) { return selectedItems.some(item => item.date === date && item.index === idx); }
+        function toggleItemSelection(date, idx) {
+            const indexInList = selectedItems.findIndex(item => item.date === date && item.index === idx);
+            if (indexInList > -1) selectedItems.splice(indexInList, 1); else selectedItems.push({ date, index: idx });
+            document.getElementById("btn-bulk-edit").style.display = selectedItems.length > 0 ? "inline-block" : "none";
+            document.getElementById("btn-bulk-edit").innerText = `Modifier ${selectedItems.length} éléments`; 
+            renderCalendar();
+        }
+        function openBulkModal() { document.getElementById("bulk-count").innerText = `${selectedItems.length} éléments sélectionnés.`; document.getElementById("bulk-modal").style.display = "flex"; }
+        function applyBulkEdit() {
+            const newTitle = document.getElementById("bulk-title").value, newColor = document.getElementById("bulk-color").value;
+            const changeTitle = document.getElementById("chk-bulk-title").checked, changeColor = document.getElementById("chk-bulk-color").checked;
+            selectedItems.forEach(item => { if (changeTitle) eventsData[item.date][item.index].title = newTitle; if (changeColor) eventsData[item.date][item.index].color = newColor; });
+            closeModal("bulk-modal"); toggleSelectionMode();
+        }
+        function bulkDelete() {
+            // Remplacement de l'alerte du navigateur par une interface personnalisée dans de futures itérations si nécessaire
+            if (!confirm("Supprimer définitivement ces éléments ?")) return;
+            selectedItems.sort((a, b) => b.index - a.index);
+            selectedItems.forEach(item => { eventsData[item.date].splice(item.index, 1); if (eventsData[item.date].length === 0) delete eventsData[item.date]; });
+            closeModal("bulk-modal"); toggleSelectionMode();
+        }
+
+        // --- GESTION DES ÉVÉNEMENTS (Saisie / Modification) ---
+        function openModal(dateStr, idx = null) {
+            currentEditInfo = { date: dateStr, index: idx };
+            const delBtn = document.getElementById("btn-delete"), endGrp = document.getElementById("end-date-group"), dupBtn = document.getElementById("btn-duplicate");
+            
+            if (idx !== null) {
+                const e = eventsData[dateStr][idx];
+                document.getElementById("modal-title").innerText = "Modifier l'action";
+                document.getElementById("event-title").value = e.title;
+                document.getElementById("event-time").value = e.time || "";
+                document.getElementById("event-color").value = e.color;
+                document.getElementById("event-start").value = dateStr;
+                document.getElementById("event-end").value = "";
+                
+                endGrp.style.display = "block"; 
+                delBtn.style.display = "inline-block";
+                dupBtn.style.display = "inline-block";
+            } else {
+                document.getElementById("modal-title").innerText = "Nouvelle action";
+                document.getElementById("event-title").value = "";
+                document.getElementById("event-time").value = "";
+                document.getElementById("event-color").value = legendItems.length > 0 ? legendItems[0].color : "#3498db";
+                document.getElementById("event-start").value = dateStr;
+                document.getElementById("event-end").value = "";
+                
+                endGrp.style.display = "block"; 
+                delBtn.style.display = "none";
+                dupBtn.style.display = "none";
+            }
+            document.getElementById("event-modal").style.display = "flex";
+        }
+
+        function saveEvent() {
+            const title = document.getElementById("event-title").value, time = document.getElementById("event-time").value, color = document.getElementById("event-color").value, start = document.getElementById("event-start").value;
+            if (!title || !start) {
+                console.warn("Veuillez renseigner un intitulé.");
+                return;
+            }
+
+            if (currentEditInfo.index !== null) {
+                eventsData[currentEditInfo.date][currentEditInfo.index] = { title, time, color };
+                const endStr = document.getElementById("event-end").value;
+                if (endStr && endStr >= start) {
+                    let cur = new Date(start + "T00:00:00");
+                    cur.setDate(cur.getDate() + 1);
+                    let stop = new Date(endStr + "T00:00:00");
+                    while (cur <= stop) {
+                        let k = formatDate(cur);
+                        if (!eventsData[k]) eventsData[k] = [];
+                        let exists = eventsData[k].some(e => e.title === title && e.color === color);
+                        if (!exists) eventsData[k].push({ title, time, color });
+                        cur.setDate(cur.getDate() + 1);
+                    }
+                }
+            } else {
+                const end = document.getElementById("event-end").value;
+                let cur = new Date(start + "T00:00:00"), stop = end ? new Date(end + "T00:00:00") : new Date(cur);
+                while (cur <= stop) {
+                    let k = formatDate(cur);
+                    if (!eventsData[k]) eventsData[k] = [];
+                    eventsData[k].push({ title, time, color });
+                    cur.setDate(cur.getDate() + 1);
+                }
+            }
+            closeModal("event-modal"); renderCalendar();
+        }
+
+        function deleteEvent() { 
+            eventsData[currentEditInfo.date].splice(currentEditInfo.index, 1); 
+            if (eventsData[currentEditInfo.date].length === 0) delete eventsData[currentEditInfo.date]; 
+            closeModal("event-modal"); renderCalendar(); 
+        }
+
+        function duplicateEventModal() { 
+            if (currentEditInfo.index !== null) { 
+                const evtToCopy = eventsData[currentEditInfo.date][currentEditInfo.index]; 
+                eventsData[currentEditInfo.date].push({ ...evtToCopy }); 
+                closeModal("event-modal"); renderCalendar(); 
+            } 
+        }
+
+        function closeModal(modalId) { document.getElementById(modalId).style.display = "none"; }
+        function changeYear(n) { currentStartYear += n; updateTitle(); renderCalendar(); }
+        function formatDate(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+        function getContrast(hex){ 
+            const r = parseInt(hex.substr(1,2),16), g = parseInt(hex.substr(3,2),16), b = parseInt(hex.substr(5,2),16); 
+            return ((r*299)+(g*587)+(b*114))/1000 >= 128 ? '#000000' : '#ffffff'; 
+        }
+
+        function getExportFilename(extension) {
+            const now = new Date();
+            const d = String(now.getDate()).padStart(2, '0');
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const y = now.getFullYear();
+            const h = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            return `Planning_${d}${m}${y}_${h}h${min}.${extension}`;
+        }
+
+        function updateActionsDuJour() {
+            const today = formatDate(new Date());
+            const listEl = document.getElementById("today-actions-list");
+            if (eventsData[today] && eventsData[today].length > 0) {
+                listEl.innerText = eventsData[today].map(e => e.title).join(" | ");
+            } else {
+                listEl.innerText = "Aucune action programmée aujourd'hui.";
+            }
+        }
+
+        // --- AUTO-SAVE (LOCALSTORAGE) ---
+        function autoSaveProject() {
+            const payload = { 
+                title: planningTitle,
+                year: currentStartYear, 
+                zone: currentZone,
+                legend: legendItems,
+                weekAB: weekABConfig,
+                events: eventsData 
+            };
+            localStorage.setItem('planning_direction_autosave', JSON.stringify(payload));
+        }
+
+        function autoLoadProject() {
+            const savedData = localStorage.getItem('planning_direction_autosave');
+            if (savedData) {
+                try {
+                    const d = JSON.parse(savedData);
+                    if (d.year) currentStartYear = d.year; 
+                    if (d.zone) currentZone = d.zone;
+                    if (d.title) planningTitle = d.title;
+                    if (d.legend) legendItems = d.legend;
+                    if (d.weekAB) weekABConfig = d.weekAB;
+                    if (d.events) eventsData = d.events; 
+
+                    document.getElementById("planning-title-input").value = planningTitle;
+                    document.getElementById("zone-select").value = currentZone;
+                } catch (e) {
+                    console.error("Erreur de chargement auto-save", e);
+                }
+            }
+        }
+
+        // --- SAUVEGARDE & CHARGEMENT JSON ---
+        function saveProject() { 
+            const payload = { 
+                title: planningTitle,
+                year: currentStartYear, 
+                zone: currentZone,
+                legend: legendItems,
+                weekAB: weekABConfig,
+                events: eventsData 
+            };
+            const a = document.createElement("a"); 
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" })); 
+            a.download = getExportFilename("json"); 
+            a.click(); 
+        }
+
+        function loadProject(event) {
+            const reader = new FileReader(); 
+            reader.onload = (e) => {
+                const d = JSON.parse(e.target.result); 
+                currentStartYear = d.year || 2025; 
+                currentZone = d.zone || "C";
+                planningTitle = d.title || `CALENDRIER DE DIRECTION - ANNÉE SCOLAIRE ${currentStartYear}-${currentStartYear+1}`;
+                legendItems = d.legend || legendItems;
+                weekABConfig = d.weekAB || weekABConfig;
+                eventsData = d.events || {}; 
+
+                document.getElementById("planning-title-input").value = planningTitle;
+                document.getElementById("zone-select").value = currentZone;
+                
+                hiddenColors = []; hiddenMonths = []; 
+                document.getElementById("btn-filter").classList.remove("btn-selection-active"); 
+                document.getElementById("btn-month-filter").classList.remove("btn-selection-active"); 
+                
+                updateTitle();
+                renderCalendar();
+            }; 
+            reader.readAsText(event.target.files[0]);
+        }
+
+        // --- EXPORTATION EXCEL ENRICHO & FORMATÉE ---
+        function exportToExcel() {
+            let table = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="UTF-8"></head><body>
+            <h2>${planningTitle}</h2>
+            <p>Année Scolaire ${currentStartYear}-${currentStartYear+1} | Zone ${currentZone}</p>
+            <table border="1" style="border-collapse: collapse;">
+            <tr>`;
+
+            // En-têtes des mois
+            for (let i = 0; i < 12; i++) { 
+                let m = (7+i)%12; 
+                if (!hiddenMonths.includes(m)) table += `<th style="background:#1e3c72; color:white; padding:6px; font-size:12px;">${monthNames[m]}</th>`; 
+            }
+            table += `</tr>`;
+
+            // Lignes des jours (1 à 31)
+            for (let d = 1; d <= 31; d++) {
+                table += `<tr>`;
+                for (let i = 0; i < 12; i++) {
+                    let m = (7+i)%12, y = m >= 7 ? currentStartYear : currentStartYear+1, last = new Date(y, m+1, 0).getDate();
+                    if (hiddenMonths.includes(m)) continue;
+
+                    if (d <= last) {
+                        let dateObj = new Date(y,m,d), k = formatDate(dateObj), isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+                        let filteredEvents = eventsData[k] ? eventsData[k].filter(e => !hiddenColors.includes(e.color)) : [];
+                        let txt = filteredEvents.length > 0 ? filteredEvents.map(e=>e.title).join(' / ') : "";
+                        let bg = filteredEvents.length > 0 ? filteredEvents[0].color : (isWeekend ? "#f1f5f9" : "#ffffff");
+                        let color = filteredEvents.length > 0 ? getContrast(bg) : "#000000";
+                        
+                        table += `<td style="background:${bg}; color:${color}; font-size:10px; padding:4px;"><b>${d}</b> ${txt}</td>`;
+                    } else table += `<td style="background:#e2e8f0;"></td>`;
+                }
+                table += `</tr>`;
+            }
+
+            table += `</table><br><h3>Légende :</h3><ul>`;
+            legendItems.forEach(item => {
+                table += `<li><span style="color:${item.color}; font-weight:bold;">■</span> ${item.label}</li>`;
+            });
+            table += `</ul></body></html>`;
+
+            const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = getExportFilename("xls");
+            a.click();
+        }
+
+        // --- IMPORT / EXPORT ICS ---
+        function exportToICS() {
+            let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Calendrier Direction//FR\n";
+            
+            Object.keys(eventsData).forEach(dateStr => {
+                eventsData[dateStr].forEach(evt => {
+                    let d = dateStr.replace(/-/g, "");
+                    let nextDayObj = new Date(dateStr + "T00:00:00");
+                    nextDayObj.setDate(nextDayObj.getDate() + 1);
+                    let endD = formatDate(nextDayObj).replace(/-/g, "");
+
+                    ics += "BEGIN:VEVENT\n";
+                    ics += `DTSTART;VALUE=DATE:${d}\n`;
+                    ics += `DTEND;VALUE=DATE:${endD}\n`;
+                    let summary = evt.time ? `[${evt.time}] ${evt.title}` : evt.title;
+                    ics += `SUMMARY:${summary}\n`;
+                    ics += "END:VEVENT\n";
+                });
+            });
+            ics += "END:VCALENDAR";
+
+            const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = getExportFilename("ics");
+            a.click();
+        }
+
+        function loadIcsProject(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                const lines = content.split(/\r\n|\n|\r/);
+                let currentEvent = {};
+                let inEvent = false;
+                
+                let defaultColor = legendItems.length > 0 ? legendItems[0].color : "#3498db";
+
+                for (let line of lines) {
+                    if (line.startsWith("BEGIN:VEVENT")) {
+                        inEvent = true;
+                        currentEvent = {};
+                    } else if (line.startsWith("END:VEVENT")) {
+                        inEvent = false;
+                        if (currentEvent.date && currentEvent.title) {
+                            if (!eventsData[currentEvent.date]) {
+                                eventsData[currentEvent.date] = [];
+                            }
+                            let exists = eventsData[currentEvent.date].some(ev => ev.title === currentEvent.title);
+                            if (!exists) {
+                                eventsData[currentEvent.date].push({
+                                    title: currentEvent.title,
+                                    time: currentEvent.time || "",
+                                    color: defaultColor
+                                });
+                            }
+                        }
+                    } else if (inEvent) {
+                        if (line.startsWith("DTSTART")) {
+                            let dateMatch = line.match(/:(\d{4})(\d{2})(\d{2})/);
+                            if (dateMatch) {
+                                currentEvent.date = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+                            }
+                        } else if (line.startsWith("SUMMARY:")) {
+                            let summary = line.substring(8).trim();
+                            // Extraction d'un éventuel horaire entre crochets [09:00]
+                            let timeMatch = summary.match(/^\[(\d{2}:\d{2})\]\s*(.*)$/);
+                            if (timeMatch) {
+                                currentEvent.time = timeMatch[1];
+                                currentEvent.title = timeMatch[2];
+                            } else {
+                                currentEvent.title = summary;
+                            }
+                        }
+                    }
+                }
+                
+                renderCalendar();
+                event.target.value = ""; 
+            };
+            reader.readAsText(file);
+        }
+
+        // Initialisation du calendrier au chargement
+        autoLoadProject();
+        updateTitle();
+        renderCalendar();
+
+        function updateClock() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const clockEl = document.getElementById("live-clock");
+            if (clockEl) {
+                clockEl.innerText = (dateStr.charAt(0).toUpperCase() + dateStr.slice(1)) + "  |  " + timeStr;
+            }
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>
